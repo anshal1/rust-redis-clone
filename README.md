@@ -1,0 +1,74 @@
+# Custom TCP Key-Value Store
+
+A simple, lightweight key-value store server implemented in Rust that uses a custom text-based TCP protocol.
+
+## Features
+
+- **In-memory Storage**: Uses a `HashMap` to store key-value pairs.
+- **Custom TCP Protocol**: A simple text-based protocol for interacting with the store.
+- **Basic CRUD Operations**: Supports adding, retrieving, and deleting keys.
+
+## Getting Started
+
+### Prerequisites
+
+- [Rust](https://www.rust-lang.org/tools/install) and `cargo` installed on your system.
+
+### Running the Server
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd custom-tcp-protocol
+   ```
+
+2. Run the server using Cargo:
+   ```bash
+   cargo run
+   ```
+   The server will start listening for connections on `127.0.0.1:5000`.
+
+## Protocol Specification
+
+The server expects commands as single lines of text.
+
+### Commands
+
+| Command | Syntax | Description | Response |
+| :--- | :--- | :--- | :--- |
+| **Add** | `add <key> "<value>"` | Stores the value associated with the key. | `Success` |
+| **Get** | `get <key>` | Retrieves the value associated with the key. | `<value>` or `None` |
+| **Delete** | `del <key>` | Removes the key and its associated value. | `Key removed` or `No key found` |
+
+### Notes on the `add` command:
+- The value must be enclosed in double quotes (`"`).
+- Example: `add mykey "my value"`
+
+## Usage Examples
+
+You can interact with the server using tools like `nc` (netcat) or `telnet`.
+
+### Using Netcat (`nc`)
+
+**Adding a key:**
+```bash
+echo 'add username "john_doe"' | nc 127.0.0.1 5000
+# Output: Success
+```
+
+**Retrieving a key:**
+```bash
+echo 'get username' | nc 127.0.0.1 5000
+# Output: john_doe
+```
+
+**Deleting a key:**
+```bash
+echo 'del username' | nc 127.0.0.1 5000
+# Output: Key removed
+```
+
+## Project Structure
+
+- `src/main.rs`: Contains the server logic, command parsing, and request handling.
+- `Cargo.toml`: Project dependencies and metadata.
