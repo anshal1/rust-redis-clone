@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     fmt,
     io::{BufRead, BufReader, Write},
     net::{TcpListener, TcpStream},
@@ -109,18 +108,18 @@ fn write_stream(stream: &mut TcpStream, to_write: &str) {
     }
 }
 
-fn perform_commands(string: String, mut stream: TcpStream, map: &mut HashMap<String, String>) {
+fn perform_commands(string: String, mut stream: TcpStream, map: &mut hashmap::MyMap::HashMap) {
     match string.parse::<Command>() {
         Ok(Command::Add) => {
             let (key, value) = get_values_and_key(&string);
-            map.insert(key, value);
+            map.add(key, value);
             write_stream(&mut stream, "Success\n");
         }
         Ok(Command::GET) => {
             let (key, _) = get_values_and_key(&string);
-            let val = if let Some(v) = map.get(&key) {
-                let mut newVal = String::new();
-                newVal.push_str(v);
+            let val = if let Ok(v) = map.get(&key) {
+                let mut newVal = String::from(v);
+
                 newVal.push('\n');
 
                 String::from(newVal)
@@ -131,13 +130,13 @@ fn perform_commands(string: String, mut stream: TcpStream, map: &mut HashMap<Str
         }
         Ok(Command::DELETE) => {
             let (key, _) = get_values_and_key(&string);
-            if let Some(_) = map.get(&key) {
-                match map.remove(&key) {
-                    Some(_) => {
+            if let Ok(_) = map.get(&key) {
+                match map.del(&key) {
+                    Ok(_) => {
                         write_stream(&mut stream, "Key removed");
                     }
-                    None => {
-                        write_stream(&mut stream, "No Key found");
+                    Err(e) => {
+                        write_stream(&mut stream, e.as_str());
                     }
                 }
             } else {
@@ -152,7 +151,6 @@ fn perform_commands(string: String, mut stream: TcpStream, map: &mut HashMap<Str
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:5000").unwrap();
-    let mut map: HashMap<String, String> = HashMap::new();
     let mut mymap = hashmap::MyMap::HashMap::new(None);
     mymap.add("Hello".to_string(), "Hello world".to_string());
     if let Ok(val) = mymap.get("Hello") {
@@ -178,6 +176,6 @@ fn main() {
         };
 
         let string = string.trim().replace("\n", "");
-        perform_commands(string, stream, &mut map);
+        perform_commands(string, stream, &mut mymap);
     }
 }

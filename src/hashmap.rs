@@ -8,24 +8,24 @@ pub mod MyMap {
         key: String,
         value: String,
         hash: u64,
-        next: Box<Option<HashItem>>,
+        next: Option<Box<HashItem>>,
     }
     pub struct HashMap {
-        map: Vec<Box<Option<HashItem>>>,
+        map: Vec<Option<Box<HashItem>>>,
         len: usize,
     }
 
     impl HashMap {
         pub fn new(len: Option<usize>) -> Self {
-            let mut map: Vec<Box<Option<HashItem>>> = Vec::new();
+            let mut map: Vec<Option<Box<HashItem>>> = Vec::new();
             if let Some(lenght) = len {
                 for _ in 0..lenght {
-                    map.push(Box::new(None));
+                    map.push(None);
                 }
                 HashMap { map, len: lenght }
             } else {
                 for _ in 0..20 {
-                    map.push(Box::new(None));
+                    map.push(None);
                 }
                 HashMap { map, len: 20 }
             }
@@ -45,11 +45,11 @@ pub mod MyMap {
         pub fn add(&mut self, key: String, value: String) -> u8 {
             let (hash, idx) = self.hash_key_and_get_index(&key);
             let old_node = self.map[idx].take();
-            self.map[idx] = Box::new(Some(HashItem {
+            self.map[idx] = Some(Box::new(HashItem {
                 key,
                 value,
                 hash,
-                next: Box::new(old_node),
+                next: old_node,
             }));
             return 0;
         }
@@ -63,7 +63,7 @@ pub mod MyMap {
                 }
             };
             loop {
-                let current_item = if let Some(it) = &**item {
+                let current_item = if let Some(it) = &*item {
                     it
                 } else {
                     return Err("None".to_string());
@@ -75,6 +75,24 @@ pub mod MyMap {
                 } else {
                     item = &current_item.next
                 }
+            }
+        }
+
+        pub fn del(&mut self, key: &str) -> Result<u8, String> {
+            // check if the index only has one item.
+            let (hash, idx) = self.hash_key_and_get_index(&key.to_string());
+            let mut current = &mut self.map[idx];
+            loop {
+                let matches = match current.as_ref() {
+                    Some(item) => item.hash == hash,
+                    None => return Err("No key found".to_string()),
+                };
+                if matches {
+                    let mut to_remove = current.take().ok_or("No key found".to_string())?;
+                    *current = to_remove.next.take();
+                    return Ok(0);
+                }
+                current = &mut current.as_mut().unwrap().next;
             }
         }
     }
