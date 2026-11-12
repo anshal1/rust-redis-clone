@@ -17,16 +17,17 @@ A simple, lightweight key-value store server implemented in Rust that uses a cus
 ### Running the Server
 
 1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd custom-tcp-protocol
-   ```
+
+    ```bash
+    git clone <repository-url>
+    cd custom-tcp-protocol
+    ```
 
 2. Run the server using Cargo:
-   ```bash
-   cargo run
-   ```
-   The server will start listening for connections on `127.0.0.1:5000`.
+    ```bash
+    cargo run
+    ```
+    The server will start listening for connections on `127.0.0.1:5000`.
 
 ## Protocol Specification
 
@@ -34,13 +35,14 @@ The server expects commands as single lines of text.
 
 ### Commands
 
-| Command | Syntax | Description | Response |
-| :--- | :--- | :--- | :--- |
-| **Add** | `add <key> "<value>"` | Stores the value associated with the key. | `Success` |
-| **Get** | `get <key>` | Retrieves the value associated with the key. | `<value>` or `None` |
-| **Delete** | `del <key>` | Removes the key and its associated value. | `Key removed` or `No key found` |
+| Command    | Syntax                | Description                                  | Response                        |
+| :--------- | :-------------------- | :------------------------------------------- | :------------------------------ |
+| **Add**    | `add <key> "<value>"` | Stores the value associated with the key.    | `Success`                       |
+| **Get**    | `get <key>`           | Retrieves the value associated with the key. | `<value>` or `None`             |
+| **Delete** | `del <key>`           | Removes the key and its associated value.    | `Key removed` or `No key found` |
 
 ### Notes on the `add` command:
+
 - The value must be enclosed in double quotes (`"`).
 - Example: `add mykey "my value"`
 
@@ -51,22 +53,30 @@ You can interact with the server using tools like `nc` (netcat) or `telnet`.
 ### Using Netcat (`nc`)
 
 **Adding a key:**
+
 ```bash
 echo 'add username "john_doe"' | nc 127.0.0.1 5000
 # Output: Success
 ```
 
 **Retrieving a key:**
+
 ```bash
 echo 'get username' | nc 127.0.0.1 5000
 # Output: john_doe
 ```
 
 **Deleting a key:**
+
 ```bash
 echo 'del username' | nc 127.0.0.1 5000
 # Output: Key removed
 ```
+
+## Current Work
+
+- **Custom HashMap**: Implementing a simple hashmap from scratch to replace the standard library `HashMap`.
+- **Client Application**: Developing a dedicated client-side application to interact with the server.
 
 ## Project Structure
 
