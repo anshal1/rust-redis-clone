@@ -93,11 +93,19 @@ fn get_values_and_key(input: &String) -> (String, String) {
     if split.len() == 2 {
         return (String::from(split[1]), string);
     }
-    for values in split[1..].iter() {
+    for values in split[2..].iter() {
         string.push_str(values);
         string.push(' ');
     }
     return (String::from(split[1]), string);
+}
+
+fn write_stream(stream: &mut TcpStream, to_write: &str) {
+    if let Err(e) = stream.write_all(to_write.as_bytes()) {
+        println!("Unable to write to the stream: {}", e);
+    } else {
+        println!("Stream Write Success")
+    }
 }
 
 fn perform_commands(string: String, mut stream: TcpStream, map: &mut HashMap<String, String>) {
@@ -105,7 +113,7 @@ fn perform_commands(string: String, mut stream: TcpStream, map: &mut HashMap<Str
         Ok(Command::Add) => {
             let (key, value) = get_values_and_key(&string);
             map.insert(key, value);
-            stream.write_all("Success\n".as_bytes()).unwrap();
+            write_stream(&mut stream, "Success\n");
         }
         Ok(Command::GET) => {
             let (key, _) = get_values_and_key(&string);
@@ -118,24 +126,25 @@ fn perform_commands(string: String, mut stream: TcpStream, map: &mut HashMap<Str
             } else {
                 String::from("None\n")
             };
-
-            stream.write_all(val.as_bytes()).unwrap();
+            write_stream(&mut stream, &val);
         }
         Ok(Command::DELETE) => {
             let (key, _) = get_values_and_key(&string);
             if let Some(_) = map.get(&key) {
                 match map.remove(&key) {
-                    Some(_) => stream.write_all("Key removed".as_bytes()).unwrap(),
+                    Some(_) => {
+                        write_stream(&mut stream, "Key removed");
+                    }
                     None => {
-                        stream.write_all("No key found".as_bytes()).unwrap();
+                        write_stream(&mut stream, "No Key found");
                     }
                 }
             } else {
-                stream.write_all("No key found".as_bytes()).unwrap();
+                write_stream(&mut stream, "No Key found");
             };
         }
         Err(e) => {
-            stream.write_all(e.0.as_bytes()).unwrap();
+            write_stream(&mut stream, e.0.as_str());
         }
     }
 }
@@ -157,9 +166,7 @@ fn main() {
         match buf.read_line(&mut string) {
             Ok(_) => {}
             Err(_) => {
-                stream
-                    .write_all("Unable to read the input".as_bytes())
-                    .unwrap();
+                write_stream(&mut stream, "Unable to read the input");
                 return;
             }
         };
