@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     fmt,
     io::{BufRead, BufReader, Write},
-    net::TcpListener,
+    net::{TcpListener, TcpStream},
     str::FromStr,
 };
 #[derive(Debug)]
@@ -100,52 +100,71 @@ fn get_values_and_key(input: &String) -> (String, String) {
     return (String::from(split[1]), string);
 }
 
+fn perform_commands(string: String, mut stream: TcpStream, map: &mut HashMap<String, String>) {
+    match string.parse::<Command>() {
+        Ok(Command::Add) => {
+            let (key, value) = get_values_and_key(&string);
+            map.insert(key, value);
+            stream.write_all("Success\n".as_bytes()).unwrap();
+        }
+        Ok(Command::GET) => {
+            let (key, _) = get_values_and_key(&string);
+            let val = if let Some(v) = map.get(&key) {
+                let mut newVal = String::new();
+                newVal.push_str(v);
+                newVal.push('\n');
+
+                String::from(newVal)
+            } else {
+                String::from("None\n")
+            };
+
+            stream.write_all(val.as_bytes()).unwrap();
+        }
+        Ok(Command::DELETE) => {
+            let (key, _) = get_values_and_key(&string);
+            if let Some(_) = map.get(&key) {
+                match map.remove(&key) {
+                    Some(_) => stream.write_all("Key removed".as_bytes()).unwrap(),
+                    None => {
+                        stream.write_all("No key found".as_bytes()).unwrap();
+                    }
+                }
+            } else {
+                stream.write_all("No key found".as_bytes()).unwrap();
+            };
+        }
+        Err(e) => {
+            stream.write_all(e.0.as_bytes()).unwrap();
+        }
+    }
+}
+
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:5000").unwrap();
     let mut map: HashMap<String, String> = HashMap::new();
     for stream in listener.incoming() {
-        let mut stream = stream.unwrap();
+        let mut stream = match stream {
+            Ok(s) => s,
+            Err(e) => {
+                println!("connection failed: {e}");
+                return;
+            }
+        };
         let mut buf = BufReader::new(&stream);
         let mut string = String::new();
-        buf.read_line(&mut string).unwrap();
+
+        match buf.read_line(&mut string) {
+            Ok(_) => {}
+            Err(_) => {
+                stream
+                    .write_all("Unable to read the input".as_bytes())
+                    .unwrap();
+                return;
+            }
+        };
+
         let string = string.trim().replace("\n", "");
-        println!("{}", string);
-        match string.parse::<Command>() {
-            Ok(Command::Add) => {
-                let (key, value) = get_values_and_key(&string);
-                map.insert(key, value);
-                stream.write_all("Success\n".as_bytes()).unwrap();
-            }
-            Ok(Command::GET) => {
-                let (key, _) = get_values_and_key(&string);
-                let val = if let Some(v) = map.get(&key) {
-                    let mut newVal = String::new();
-                    newVal.push_str(v);
-                    newVal.push('\n');
-
-                    String::from(newVal)
-                } else {
-                    String::from("None\n")
-                };
-
-                stream.write_all(val.as_bytes()).unwrap();
-            }
-            Ok(Command::DELETE) => {
-                let (key, _) = get_values_and_key(&string);
-                if let Some(_) = map.get(&key) {
-                    match map.remove(&key) {
-                        Some(_) => stream.write_all("Key removed".as_bytes()).unwrap(),
-                        None => {
-                            stream.write_all("No key found".as_bytes()).unwrap();
-                        }
-                    }
-                } else {
-                    stream.write_all("No key found".as_bytes()).unwrap();
-                };
-            }
-            Err(e) => {
-                stream.write_all(e.0.as_bytes()).unwrap();
-            }
-        }
+        perform_commands(string, stream, &mut map);
     }
 }
