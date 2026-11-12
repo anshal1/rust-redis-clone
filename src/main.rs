@@ -5,6 +5,7 @@ use std::{
     net::{TcpListener, TcpStream},
     str::FromStr,
 };
+mod hashmap;
 #[derive(Debug)]
 enum Command {
     GET,
@@ -152,6 +153,11 @@ fn perform_commands(string: String, mut stream: TcpStream, map: &mut HashMap<Str
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:5000").unwrap();
     let mut map: HashMap<String, String> = HashMap::new();
+    let mut mymap = hashmap::MyMap::HashMap::new(None);
+    mymap.add("Hello".to_string(), "Hello world".to_string());
+    if let Ok(val) = mymap.get("Hello") {
+        println!("Value: {}", val);
+    }
     for stream in listener.incoming() {
         let mut stream = match stream {
             Ok(s) => s,
