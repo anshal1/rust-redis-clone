@@ -73,6 +73,70 @@ echo 'del username' | nc 127.0.0.1 5000
 # Output: Key removed
 ```
 
+### Using the JS Client
+
+The project includes a TypeScript-based client in the `clients/js` directory.
+
+**Setup:**
+
+1. Navigate to the client directory:
+    ```bash
+    cd clients/js
+    ```
+2. Install dependencies:
+    ```bash
+    npm install
+    ```
+
+**Running the client:**
+You can run the client in development mode using `tsx`:
+
+```bash
+npm run dev
+```
+
+Or build and run it:
+
+```bash
+npm run build
+npm run start
+```
+
+**Example Usage in Code:**
+
+```typescript
+import { MyHashClient } from "./src/client";
+
+async function main() {
+    const client = new MyHashClient("127.0.0.1", 5000);
+
+    try {
+        await client.connect();
+
+        // Adding a key
+        await client.add("username", "john_doe");
+        console.log("User added successfully");
+
+        // Retrieving a key (returns Info<string>)
+        const userResponse = await client.get("username");
+        console.log(`Retrieved: ${userResponse.message}`);
+
+        // Deleting a key
+        await client.delete("username");
+        console.log("User deleted successfully");
+    } catch (error) {
+        console.error(
+            "An error occurred while interacting with the server:",
+            error,
+        );
+    } finally {
+        // Always disconnect to clean up resources
+        await client.disconnect();
+    }
+}
+main();
+```
+
 ## Progress & Roadmap
 
 - ✅ **Custom HashMap**: Implemented a simple hashmap from scratch to replace the standard library `HashMap`.
