@@ -1,7 +1,7 @@
 use std::{
     fmt,
     io::{BufRead, BufReader, Write},
-    net::{TcpListener, TcpStream},
+    net::{Shutdown, TcpListener, TcpStream},
     str::FromStr,
 };
 mod hashmap;
@@ -94,88 +94,113 @@ fn get_values_and_key(input: &String) -> (String, String) {
         return (String::from(split[1]), string);
     }
     for values in split[2..].iter() {
-        string.push_str(values);
+        string.push_str(&values.replace('"', "").to_string());
         string.push(' ');
     }
-    return (String::from(split[1]), string);
+    return (String::from(split[1]), string.trim_end().to_string());
 }
 
 fn write_stream(stream: &mut TcpStream, to_write: &str) {
-    if let Err(e) = stream.write_all(to_write.as_bytes()) {
+    let mut message_with_newline = String::from(to_write);
+    message_with_newline.push('\n');
+    if let Err(e) = stream.write_all(message_with_newline.as_bytes()) {
         println!("Unable to write to the stream: {}", e);
     } else {
         println!("Stream Write Success")
     }
 }
 
-fn perform_commands(string: String, mut stream: TcpStream, map: &mut hashmap::MyMap::HashMap) {
+fn perform_commands(string: String, stream: &mut TcpStream, map: &mut hashmap::MyMap::HashMap) {
     match string.parse::<Command>() {
         Ok(Command::Add) => {
             let (key, value) = get_values_and_key(&string);
             map.add(key, value);
-            write_stream(&mut stream, "Success\n");
+            write_stream(stream, "0");
         }
         Ok(Command::GET) => {
             let (key, _) = get_values_and_key(&string);
             let val = if let Ok(v) = map.get(&key) {
-                let mut newVal = String::from(v);
-
-                newVal.push('\n');
-
-                String::from(newVal)
+                String::from(v)
             } else {
-                String::from("None\n")
+                String::from("None")
             };
-            write_stream(&mut stream, &val);
+            write_stream(stream, val.as_str());
         }
         Ok(Command::DELETE) => {
             let (key, _) = get_values_and_key(&string);
             if let Ok(_) = map.get(&key) {
                 match map.del(&key) {
                     Ok(_) => {
-                        write_stream(&mut stream, "Key removed");
+                        write_stream(stream, "0");
                     }
                     Err(e) => {
-                        write_stream(&mut stream, e.as_str());
+                        write_stream(stream, e.as_str());
                     }
                 }
             } else {
-                write_stream(&mut stream, "No Key found");
+                write_stream(stream, "No Key found");
             };
         }
         Err(e) => {
-            write_stream(&mut stream, e.0.as_str());
+            write_stream(stream, e.0.as_str());
         }
     }
 }
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:5000").unwrap();
+    let listener = match TcpListener::bind("127.0.0.1:5000") {
+        Ok(server) => server,
+        Err(e) => {
+            let mut retry = 3;
+            loop {
+                if retry <= 0 {
+                    break;
+                }
+                main();
+                retry -= 1
+            }
+            println!("Unable to start the server, {}", e);
+            return;
+        }
+    };
     let mut mymap = hashmap::MyMap::HashMap::new(None);
-    mymap.add("Hello".to_string(), "Hello world".to_string());
-    if let Ok(val) = mymap.get("Hello") {
-        println!("Value: {}", val);
-    }
     for stream in listener.incoming() {
-        let mut stream = match stream {
+        println!("Connection");
+        let stream = match stream {
             Ok(s) => s,
             Err(e) => {
                 println!("connection failed: {e}");
                 return;
             }
         };
-        let mut buf = BufReader::new(&stream);
-        let mut string = String::new();
+        let mut buf = BufReader::new(stream);
+        // loop to read messages and perfrom commands until the user sends "end\n"
+        loop {
+            let mut string = String::new();
 
-        match buf.read_line(&mut string) {
-            Ok(_) => {}
-            Err(_) => {
-                write_stream(&mut stream, "Unable to read the input");
-                return;
+            match buf.read_line(&mut string) {
+                Ok(_) => {}
+                Err(_) => {
+                    write_stream(buf.get_mut(), "Unable to read the input");
+                    return;
+                }
+            };
+
+            let string = string.trim().replace("\n", "");
+            if string.is_empty() {
+                break;
             }
-        };
-
-        let string = string.trim().replace("\n", "");
-        perform_commands(string, stream, &mut mymap);
+            if string == "end".to_string() {
+                write_stream(buf.get_mut(), "Goodbye\n");
+                if buf.get_mut().shutdown(Shutdown::Write).is_ok() {
+                    println!("Read for connection closed");
+                } else {
+                    println!("Unable to close the connection");
+                }
+                break;
+            }
+            println!("{}", string);
+            perform_commands(string, buf.get_mut(), &mut mymap);
+        }
     }
 }

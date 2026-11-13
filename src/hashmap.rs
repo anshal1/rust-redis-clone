@@ -79,7 +79,6 @@ pub mod MyMap {
         }
 
         pub fn del(&mut self, key: &str) -> Result<u8, String> {
-            // check if the index only has one item.
             let (hash, idx) = self.hash_key_and_get_index(&key.to_string());
             let mut current = &mut self.map[idx];
             loop {
