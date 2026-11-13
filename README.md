@@ -73,12 +73,19 @@ echo 'del username' | nc 127.0.0.1 5000
 # Output: Key removed
 ```
 
-## Current Work
+## Progress & Roadmap
 
-- **Custom HashMap**: Implementing a simple hashmap from scratch to replace the standard library `HashMap`.
-- **Client Application**: Developing a dedicated client-side application to interact with the server.
+- ✅ **Custom HashMap**: Implemented a simple hashmap from scratch to replace the standard library `HashMap`.
+- ✅ **JS Client**: Created a JavaScript client to interact with the server.
+- ⏳ **Rust Client**: Starting development on a native Rust client soon.
 
 ## Project Structure
 
 - `src/main.rs`: Contains the server logic, command parsing, and request handling.
 - `Cargo.toml`: Project dependencies and metadata.
+
+## A Note from the Developer
+
+I'm an average developer, and this was my first time implementing so much of a project myself in a low-level programming language. It was challenging, but I loved every step of the process!
+
+I know my implementations might not be the most optimized or "best practice," so I would love to receive feedback from more experienced developers. Thanks for checking out my project!
