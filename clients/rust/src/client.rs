@@ -1,7 +1,7 @@
 pub mod MyHashClient {
     use std::{
         io::{BufRead, BufReader, Error, Write},
-        net::TcpStream,
+        net::{Shutdown, TcpStream},
     };
 
     pub struct Client {
@@ -17,7 +17,7 @@ pub mod MyHashClient {
             let stream = TcpStream::connect(addr)?;
             Ok(Client { connection: stream })
         }
-        // returns a error if any
+        // returns a error string if any
         pub fn add(&mut self, key: &String, value: &String) -> Option<String> {
             let mut buf = BufReader::new(&self.connection);
             if let Err(e) = buf
@@ -38,21 +38,19 @@ pub mod MyHashClient {
                 Some(response)
             }
         }
-        // return the value, and returns None when any error occurs
-        pub fn get(&mut self, key: &String) -> Option<String> {
+        // return the value, and returns "None" when no value is found and returs error string
+        pub fn get(&mut self, key: &String) -> Result<String, String> {
             let mut buf = BufReader::new(&self.connection);
             if let Err(e) = buf.get_mut().write_all(format!("get {key}\n").as_bytes()) {
                 println!("Unable to send the command to the server: {}", e);
-                return None;
-            } else {
-                println!("Success");
-            };
+                return Err(format!("Unable to send the command to the server: {e}"));
+            }
             let mut response = String::new();
             if let Err(e) = buf.read_line(&mut response) {
                 println!("Unable to read the response from the server: {}", e);
-                return None;
+                return Err(format!("Unable to read the response from the server: {e}"));
             }
-            Some(response.replace('\n', ""))
+            Ok(response.replace('\n', ""))
         }
         // returns a error if any
         pub fn del(&mut self, key: &String) -> Option<String> {
@@ -81,7 +79,7 @@ pub mod MyHashClient {
                 return Err(err.to_string());
             }
             if let Err(err) = self.connection.shutdown(std::net::Shutdown::Write) {
-                println!("Unable to send shutdown request");
+                println!("Unable to shutdown the write from client to server");
                 return Err(err.to_string());
             };
             let mut goodbye = String::new();
@@ -90,6 +88,10 @@ pub mod MyHashClient {
                 return Err(err.to_string());
             } else {
                 println!("{}", goodbye);
+            };
+            if let Err(err) = self.connection.shutdown(Shutdown::Read) {
+                println!("Unable to shutdown the read from client to server");
+                return Err(err.to_string());
             };
             Ok("Connection Closed".to_string())
         }
