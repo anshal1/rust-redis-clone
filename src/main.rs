@@ -115,7 +115,7 @@ fn perform_commands(string: String, stream: &mut TcpStream, map: &mut hashmap::M
         Ok(Command::Add) => {
             let (key, value) = get_values_and_key(&string);
             map.add(key, value);
-            write_stream(stream, "0");
+            write_stream(stream, "");
         }
         Ok(Command::GET) => {
             let (key, _) = get_values_and_key(&string);
@@ -131,7 +131,7 @@ fn perform_commands(string: String, stream: &mut TcpStream, map: &mut hashmap::M
             if let Ok(_) = map.get(&key) {
                 match map.del(&key) {
                     Ok(_) => {
-                        write_stream(stream, "0");
+                        write_stream(stream, "");
                     }
                     Err(e) => {
                         write_stream(stream, e.as_str());
@@ -149,7 +149,10 @@ fn perform_commands(string: String, stream: &mut TcpStream, map: &mut hashmap::M
 
 fn main() {
     let listener = match TcpListener::bind("127.0.0.1:5000") {
-        Ok(server) => server,
+        Ok(server) => {
+            println!("Server Running");
+            server
+        }
         Err(e) => {
             let mut retry = 3;
             loop {

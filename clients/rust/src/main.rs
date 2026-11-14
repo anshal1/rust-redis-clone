@@ -29,12 +29,12 @@ fn main() {
         }
         idx += 1;
     }
-    for i in 0..idx {
-        if let Some(err) = connection.del(&i.to_string()) {
-            println!("Error: {}", err);
-            continue;
-        }
-    }
+    // for i in 0..idx {
+    //     if let Some(err) = connection.del(&i.to_string()) {
+    //         println!("Error: {}", err);
+    //         continue;
+    //     }
+    // }
 
     connection.disconnect().unwrap();
 

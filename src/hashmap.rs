@@ -1,6 +1,7 @@
 pub mod MyMap {
     use std::{
         hash::{DefaultHasher, Hash, Hasher},
+        ops::DerefMut,
         panic, str,
     };
     #[derive(Debug, Clone)]
