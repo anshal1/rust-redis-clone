@@ -4,7 +4,7 @@ A simple, lightweight key-value store server implemented in Rust that uses a cus
 
 ## Features
 
-- **In-memory Storage**: Uses a `HashMap` to store key-value pairs.
+- **In-memory Storage**: Uses a custom hashmap implementation (`src/hashmap.rs`) to store key-value pairs.
 - **Custom TCP Protocol**: A simple text-based protocol for interacting with the store.
 - **Basic CRUD Operations**: Supports adding, retrieving, and deleting keys.
 
@@ -137,15 +137,84 @@ async function main() {
 main();
 ```
 
+### Using the Rust Client
+
+The project includes a native Rust client in the `clients/rust` directory. It has no external dependencies.
+
+**Running the client:**
+
+Make sure the server is running first (`cargo run` in the project root), then:
+
+```bash
+cd clients/rust
+cargo run
+```
+
+The bundled `main.rs` reads `names.txt` and bulk-adds each line as a value with an incrementing numeric key.
+
+**Example Usage in Code:**
+
+```rust
+mod client;
+use crate::client::MyHashClient;
+
+fn main() {
+    let mut connection = match MyHashClient::Client::new("127.0.0.1", 5000) {
+        Ok(conn) => conn,
+        Err(e) => {
+            eprintln!("Unable to connect to the server: {e}");
+            return;
+        }
+    };
+
+    // Adding a key (returns None on success, Some(error) on failure)
+    if let Some(err) = connection.add(&"username".to_string(), &"john_doe".to_string()) {
+        eprintln!("Error adding key: {err}");
+        return;
+    }
+
+    // Retrieving a key (returns Result<String, String>)
+    match connection.get(&"username".to_string()) {
+        Ok(value) => println!("Retrieved: {value}"),
+        Err(e) => println!("Error: {e}"),
+    }
+
+    // Deleting a key (returns None on success, Some(error) on failure)
+    if let Some(err) = connection.del(&"username".to_string()) {
+        eprintln!("Error deleting key: {err}");
+    }
+
+    // Always disconnect to clean up resources
+    if let Err(e) = connection.disconnect() {
+        eprintln!("Error disconnecting: {e}");
+    }
+}
+```
+
+**API Overview:**
+
+| Method                    | Returns                          | Description                                                                      |
+| :------------------------ | :------------------------------- | :------------------------------------------------------------------------------- |
+| `Client::new(host, port)` | `Result<Client, std::io::Error>` | Connects to the server                                                           |
+| `add(&key, &value)`       | `Option<String>`                 | `None` on success, `Some(error)` on failure                                      |
+| `get(&key)`               | `Result<String, String>`         | `Ok(value)` (`"None"(string)` if the key doesn't exist), `Err(error)` on failure |
+| `del(&key)`               | `Option<String>`                 | Same pattern as `add`: `None` on success, `Some(error)` on failure               |
+| `disconnect()`            | `Result<String, String>`         | Sends `end` and closes the connection                                            |
+
+Note: `add` and `del` take `&String` arguments and return `Option<String>` — `None` means the action succeeded, `Some` carries the error message.
+
 ## Progress & Roadmap
 
 - ✅ **Custom HashMap**: Implemented a simple hashmap from scratch to replace the standard library `HashMap`.
 - ✅ **JS Client**: Created a JavaScript client to interact with the server.
-- ⏳ **Rust Client**: Starting development on a native Rust client soon.
+- ✅ **Rust Client**: Created a native Rust client to interact with the server.
 
 ## Project Structure
 
 - `src/main.rs`: Contains the server logic, command parsing, and request handling.
+- `src/hashmap.rs`: Custom hashmap implementation used by the server.
+- `clients/js`: TypeScript/JavaScript client.
+- `clients/rust`: Native Rust client.
 - `Cargo.toml`: Project dependencies and metadata.
 
 ## A Note from the Developer
