@@ -5,6 +5,9 @@ use std::{
     path::Path,
 };
 
+struct Test {
+    val: Option<String>,
+}
 use crate::client::MyHashClient;
 fn main() {
     let file = File::open(Path::new("./names.txt")).unwrap();
@@ -37,6 +40,5 @@ fn main() {
     // }
 
     connection.disconnect().unwrap();
-
     println!("Hello, world!");
 }
